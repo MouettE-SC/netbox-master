@@ -1,0 +1,2 @@
+[almalinux]
+netbox ansible_user=ansible

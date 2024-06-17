@@ -1,0 +1,9 @@
+- name: Installation redis
+  dnf:
+    name: redis
+    state: present
+- name: Activation redis
+  systemd:
+    name: redis
+    enabled: true
+    state: started

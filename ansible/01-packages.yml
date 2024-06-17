@@ -1,0 +1,23 @@
+- name: Mise a jour du systeme
+  dnf:
+    name: "*"
+    state: latest
+- name: Installation yum-utils, open-vm-tools et outils selinux
+  dnf:
+    name:
+      - yum-utils
+      - policycoreutils-python-utils
+      - open-vm-tools
+    state: present
+- name: Vérification redémarrage nécessaire
+  shell: needs-restarting -r
+  changed_when: false
+  register: reboot_required
+  failed_when: reboot_required.rc != 0 and reboot_required.rc != 1
+- name: Redémarrage
+  reboot:
+  when: reboot_required.rc == 1
+- name: Suppression anciens noyaux
+  shell: dnf -y remove --oldinstallonly --setopt installonly_limit=2 kernel
+  register: ret
+  failed_when: "ret.rc not in [0,1]"

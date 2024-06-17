@@ -1,0 +1,38 @@
+- name: Check installed netbox-utils files
+  stat:
+    path: '/opt/netbox-utils'
+  register: nbu_dir 
+- name: Download and extract NetBox files
+  unarchive:
+    src: 'https://github.com/MouettE-SC/netbox-utils/archive/refs/heads/master.zip'
+    remote_src: true
+    dest: /opt
+  when: not nbu_dir.stat.exists
+- name: Rename netbox-utils directory
+  command: mv /opt/netbox-utils-master /opt/netbox-utils
+  when: not nbu_dir.stat.exists
+- name: setup netbox-utils venv
+  pip:
+    requirements: /opt/netbox-utils/requirements.txt
+    virtualenv_command: python3.11 -m venv
+    virtualenv: /opt/netbox-utils/.venv
+  when: not nbu_dir.stat.exists
+- name: Add sudo rules for netbox-utils
+  copy:
+    src: netbox-utils.sudo
+    dest: /etc/sudoers.d/netbox
+    mode: 0440
+- name: install gunicorn in netbox-utils venv
+  pip:
+    name: gunicorn
+    virtualenv: /opt/netbox-utils/.venv
+- name: Copy systemd service file
+  copy:
+    src: netbox-utils.service
+    dest: /etc/systemd/system
+- name: Enable and start netbox-utils service
+  systemd:
+    daemon_reload: true
+    name: netbox-utils.service
+    state: started
+    enabled: true

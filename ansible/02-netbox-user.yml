@@ -1,0 +1,20 @@
+- name: Création groupe netbox
+  group:
+    name: netbox
+    gid: 1000
+- name: Création utilisateur netbox
+  user:
+    name: netbox
+    group: netbox
+    create_home: False
+    uid: 1000
+    comment: NetBox User
+    password: '!'
+    shell: /sbin/nologin
+- name: Création /home/netbox
+  file:
+    path: /home/netbox
+    mode: 0770
+    state: directory
+    group: netbox
+    owner: netbox

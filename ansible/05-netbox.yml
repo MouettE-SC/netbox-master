@@ -1,0 +1,90 @@
+- name: Install netbox dependencies
+  dnf:
+    name:
+      - python3.11
+      - python3.11-devel
+      - gcc
+      - libxml2-devel
+      - libxslt-devel
+      - libffi-devel
+      - libpq-devel
+      - openssl-devel
+      - redhat-rpm-config
+    state: present
+- name: Check installed NetBox files
+  stat:
+    path: '/opt/netbox-{{ netbox.version }}'
+  register: nb_dir 
+- name: Download and extract NetBox files
+  unarchive:
+    src: 'https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox.version }}.tar.gz'
+    remote_src: true
+    dest: /opt
+  when: not nb_dir.stat.exists
+- name: Create netbox app symlink
+  file:
+    src: 'netbox-{{ netbox.version }}'
+    dest: /opt/netbox
+    state: link
+- name: Fix netbox files permission
+  file:
+    path: "{{ item }}"
+    owner: netbox
+    group: netbox
+    recurse: true
+  loop:
+    - /opt/netbox/netbox/media
+    - /opt/netbox/netbox/reports
+    - /opt/netbox/netbox/scripts
+- name: Check netbox configuration file
+  stat:
+    path: /opt/netbox/netbox/netbox/configuration.py
+  register: nb_config
+- name: Generate netbox application secret key
+  set_fact:
+    nb_secret_key: "{{ lookup('ansible.builtin.password', '/dev/null', length=64) }}"
+  when: not nb_config.stat.exists
+- name: Generate configuration file
+  template:
+    src: configuration.py
+    dest: /opt/netbox/netbox/netbox/configuration.py
+    owner: root
+    group: root
+    mode: 0664
+  when: not nb_config.stat.exists
+- name: Run NetBox upgrade.sh script
+  command: /opt/netbox/upgrade.sh
+- name: Copy gunicorn configuration file
+  copy:
+    src: gunicorn.py
+    dest: /opt/netbox
+- name: Copy systemd service files
+  copy:
+    src: '{{ item }}'
+    dest: /etc/systemd/system
+  loop:
+    - netbox-housekeeping.service
+    - netbox-housekeeping.timer
+    - netbox-rq.service
+    - netbox.service
+- name: Enable and start netbox services
+  systemd:
+    daemon_reload: true
+    name: '{{ item }}'
+    state: started
+    enabled: true
+  loop:
+    - netbox-housekeeping.timer
+    - netbox-rq.service
+    - netbox.service
+- name: Recreate netbox database (1/2)
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: netbox
+    state: absent
+- name: Recreate netbox database (2/2)
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: netbox
+    owner: netbox
+

@@ -1,0 +1,86 @@
+- name: Installation postgresql 15
+  dnf:
+    name: 
+      - '@postgresql:15/server'
+      - python3-psycopg2
+    state: present
+- name: Vérification fichiers de données postgresql
+  stat:
+    path: /var/lib/pgsql/data/PG_VERSION
+  register: pg_data
+- name: Initialisation fichiers de données postgresql
+  command: /usr/bin/postgresql-setup --initdb
+  when: not pg_data.stat.exists
+- name: Activation et démarrage postgresql 15
+  systemd:
+    name: postgresql
+    state: started
+    enabled: true
+- name: Activer mot de passe pour utilisateur netbox dans pg_hba.conf (1/3)
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    insertbefore: 'local\s+all\s+all'
+    line: 'local   all     netbox          password'
+  register: pg_hba1
+- name: Activer mot de passe pour utilisateur netbox dans pg_hba.conf (2/3)
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    insertbefore: 'host\s+all\s+all\s+127\.0\.0\.1/32'
+    line: 'host   all     netbox     127.0.0.1/32     password'
+  register: pg_hba2
+- name: Activer mot de passe pour utilisateur netbox dans pg_hba.conf (1/3)
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    insertbefore: 'host\s+all\s+all\s+::1/128'
+    line: 'host   all     netbox     ::1/128     password'
+  register: pg_hba3
+- name: Rechargement postgresql
+  systemd:
+    name: postgresql
+    state: reloaded
+  when: pg_hba1.changed or pg_hba2.changed or pg_hba3.changed
+- name: Recherche fichier de mot de passe postgreSQL netbox
+  stat:
+    path: /home/netbox/.pgpass
+  register: pg_pass
+- name: Génération du mot de passe postgreSQL netbox
+  set_fact:
+    nb_passwd: "{{ lookup('ansible.builtin.password', '/dev/null', length=24) }}"
+  when: not pg_pass.stat.exists
+- name: Écriture du fichier de mot de passe postgreSQL netbox
+  copy:
+    content: '{{ nb_passwd }}'
+    mode: 0400
+    owner: netbox
+    group: netbox
+    dest: /home/netbox/.pgpass
+  when: not pg_pass.stat.exists
+- name: Récupération du mot de passe postgreSQL netbox (1/2)
+  slurp:
+    src: /home/netbox/.pgpass
+  when: pg_pass.stat.exists
+  register: nb_passwd_sl
+- name: Récupération du mot de passe postgreSQL netbox (2/2)
+  set_fact:
+    nb_passwd: '{{ nb_passwd_sl.content | b64decode }}'
+  when: pg_pass.stat.exists
+- name: Create netbox postgresql user
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    user: netbox
+    role_attr_flags: CREATEDB
+    password: "{{ nb_passwd }}"
+- name: Create netbox database
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: netbox
+    owner: netbox
+- name: grant create privs to netbox
+  become_user: postgres
+  community.postgresql.postgresql_privs:
+    db: netbox
+    roles: netbox
+    privs: CREATE
+    type: schema
+    objs: public
+  

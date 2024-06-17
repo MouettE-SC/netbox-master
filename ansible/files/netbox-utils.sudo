@@ -1,0 +1,4 @@
+netbox ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl start netbox
+netbox ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl stop netbox
+netbox ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl start netbox-rq
+netbox ALL=(ALL:ALL) NOPASSWD: /usr/bin/systemctl stop netbox-rq

@@ -1,0 +1,19 @@
+[Unit]
+Description=netbox-utils WSGI Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+User=netbox
+Group=netbox
+PIDFile=/var/tmp/netbox-utils.pid
+WorkingDirectory=/opt/netbox-utils
+ExecStart=/opt/netbox-utils/.venv/bin/gunicorn --pid /var/tmp/netbox-utils.pid --pythonpath /opt/netbox-utils --config /opt/netbox-utils/gunicorn.py app:app
+Restart=on-failure
+RestartSec=30
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

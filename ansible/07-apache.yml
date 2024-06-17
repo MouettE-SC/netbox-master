@@ -1,0 +1,86 @@
+- name: Install apache2
+  dnf:
+    name:
+      - httpd
+      - mod_ssl
+      - python3-cryptography
+    state: present
+- name: Disable default https virtual host
+  blockinfile:
+    path: /etc/httpd/conf.d/ssl.conf
+    marker: '{mark}'
+    marker_begin: '<VirtualHost _default_:443>'
+    marker_end: '</VirtualHost>'
+    backup: true
+- name: Generate netbox private key
+  community.crypto.openssl_privatekey:
+    path: /etc/pki/tls/private/netbox.key
+    mode: 0600
+- name: Generate netbox CSR
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: /etc/pki/tls/private/netbox.key
+    common_name: netbox
+    organization_name: C2i
+  register: csr
+- name: Generate netbox self-signed certificate
+  community.crypto.x509_certificate:
+    path: /etc/pki/tls/certs/netbox.crt
+    csr_content: "{{ csr.csr }}"
+    privatekey_path: /etc/pki/tls/private/netbox.key
+    provider: selfsigned
+    mode: 0644
+- name: Append sites.d include directive in apache configuration
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    line: 'IncludeOptional sites.d/*.conf'
+- name: Create sites.d apache configuration directory
+  file:
+    path: /etc/httpd/sites.d
+    state: directory
+    mode: 0755
+- name: Copy apache configuration files
+  copy:
+    src: '{{ item[0] }}'
+    dest: '/etc/httpd/sites.d/{{ item[1] }}'
+    mode: 0644
+  loop:
+    - [ 'apache-netbox.conf', 'netbox.conf' ]
+    - [ 'apache-netbox-utils.conf', 'netbox-utils.conf' ]
+- name: Ouverture des ports d'écoute pour apache2 (1/2)
+  ansible.posix.firewalld:
+    service: '{{ item }}'
+    state: enabled
+    permanent: true
+    immediate: true
+  loop:
+    - http
+    - https
+- name: Ouverture des ports d'écoute pour apache2 (2/2)
+  ansible.posix.firewalld:
+    port: '{{ item }}'
+    state: enabled
+    permanent: true
+    immediate: true
+  loop:
+    - 81/tcp
+    - 444/tcp
+- name: Ouverture des ports supplémentaires dans SELinux pour apache
+  community.general.seport:
+    ports: '{{ item }}'
+    proto: tcp
+    setype: http_port_t
+    state: present
+  loop:
+    - 81
+    - 444
+- name: Autorisation de relais pour apache (SELinux)
+  ansible.posix.seboolean:
+    name: httpd_can_network_connect
+    state: true
+    persistent: true
+- name: Activation et démarrage apache2
+  systemd:
+    name: httpd
+    state: started
+    enabled: true
+
