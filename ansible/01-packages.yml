@@ -6,8 +6,8 @@
   dnf:
     name:
       - yum-utils
-      - policycoreutils-python-utils
       - open-vm-tools
+      - python3-policycoreutils
     state: present
 - name: Vérification redémarrage nécessaire
   shell: needs-restarting -r
