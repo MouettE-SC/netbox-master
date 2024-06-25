@@ -6,7 +6,7 @@ mkdir -p custom
 sha256sum -c AlmaLinux-8.10-x86_64-boot.iso.sha256
 7z x -y -ocustom AlmaLinux-8.10-x86_64-boot.iso
 rm -rf 'custom/[BOOT]'
-cp -f netbox-ks.cfg custom
+cp -f netbox-ks-*.cfg custom
 cp -f grub.cfg custom/EFI/BOOT
 git describe --all --long --dirty > custom/iso.build
 ( cd custom ; mkisofs -o ../AlmaLinux-8.10-x86_64-boot-netbox.iso -b isolinux/isolinux.bin -J -R -l \
