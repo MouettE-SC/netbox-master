@@ -2,6 +2,7 @@
   vars_files:
     - vars.yml
   tasks:
+    - import_tasks: 00-luks-prep.yml
     - import_tasks: 01-packages.yml
     - import_tasks: 02-netbox-user.yml
     - import_tasks: 03-postgresql.yml

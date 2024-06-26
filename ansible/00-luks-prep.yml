@@ -1,0 +1,46 @@
+- name: Création du répertoire /etc/luks
+  file:
+    path: /etc/luks
+    mode: 0500
+    state: directory
+- name: Recherche clé de déchiffrement auto
+  stat:
+    path: /etc/luks/install.keyfile
+  register: luks_key
+- name: Génération de la clé de déchiffrement auto
+  shell: dd if=/dev/urandom of=/etc/luks/install.keyfile count=1
+  when: not luks_key.stat.exists
+  register: initrd1
+- name: Droits clé de déchiffrement
+  file:
+    path: /etc/luks/install.keyfile
+    mode: 0400
+    state: file
+- name: Ajout de la clé de déchiffrement auto à LUKS
+  community.crypto.luks_device:
+    device: /dev/sda3
+    passphrase: sedrftgy
+    new_keyfile: /etc/luks/install.keyfile
+- name: Ajout de la clé de déchiffrement à l'initramfs
+  copy:
+    dest: /etc/dracut.conf.d/luks.conf
+    content: 'install_items+=" /etc/luks/install.keyfile "'
+    mode: 0644
+  register: initrd2
+- name: Configuration crypttab
+  replace:
+    path: /etc/crypttab
+    regexp: none
+    replace: /etc/luks/install.keyfile
+  register: initrd3
+- name: Regénération initrd
+  shell: dracut -f
+  when: initrd1.changed or initrd2.changed or initrd3.changed
+  register: initrd
+- name: Redémarrage
+  reboot:
+  when: initrd.changed
+- name: Suppression de la clé de déchiffrement d'installation
+  community.crypto.luks_device:
+    device: /dev/sda3
+    remove_passphrase: sedrftgy
