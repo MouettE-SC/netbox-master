@@ -8,6 +8,7 @@ sha256sum -c AlmaLinux-8.10-x86_64-boot.iso.sha256
 rm -rf 'custom/[BOOT]'
 cp -f netbox-ks-*.cfg custom
 cp -f grub.cfg custom/EFI/BOOT
+cp -f isolinux.cfg custom/isolinux
 git describe --all --long --dirty > custom/iso.build
 ( cd custom ; mkisofs -o ../AlmaLinux-8.10-x86_64-boot-netbox.iso -b isolinux/isolinux.bin -J -R -l \
                       -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table \

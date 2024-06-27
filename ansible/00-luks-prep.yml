@@ -18,7 +18,7 @@
     state: file
 - name: Ajout de la clé de déchiffrement auto à LUKS
   community.crypto.luks_device:
-    device: /dev/sda3
+    device: '{{ luks_part }}'
     passphrase: sedrftgy
     new_keyfile: /etc/luks/install.keyfile
 - name: Ajout de la clé de déchiffrement à l'initramfs
@@ -42,5 +42,5 @@
   when: initrd.changed
 - name: Suppression de la clé de déchiffrement d'installation
   community.crypto.luks_device:
-    device: /dev/sda3
+    device: '{{ luks_part }}'
     remove_passphrase: sedrftgy

@@ -2,7 +2,7 @@
   stat:
     path: '/opt/netbox-utils'
   register: nbu_dir 
-- name: Download and extract NetBox files
+- name: Download and extract netbox-utils files
   unarchive:
     src: 'https://github.com/MouettE-SC/netbox-utils/archive/refs/heads/master.zip'
     remote_src: true

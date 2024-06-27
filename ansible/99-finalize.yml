@@ -1,0 +1,71 @@
+- name: Suppression des fichiers de kickstart anaconda
+  file:
+    path: "/root/{{ item }}"
+    state: absent
+  loop:
+    - anaconda-ks.cfg
+    - original-ks.cfg
+- name: Vidage caches dnf
+  shell: dnf clean all
+- name: Inventaire des cles ssh
+  find:
+    path: /etc/ssh
+    pattern: ssh_host_*
+  register: ssh_host_keys
+- name: Suppression des cles ssh
+  file:
+    path: '{{ item }}'
+    state: absent
+  loop: "{{ ssh_host_keys.files | map(attribute='path') | list }}"
+- name: Désactivation du serveur SSH
+  systemd:
+    name: sshd
+    enabled: false
+- name: Copie du script first-boot.py
+  copy:
+    src: first-boot/first-boot.py
+    dest: /usr/local/sbin
+    mode: 0755
+- name: Copie de la cible systemd first-boot
+  copy:
+    src: first-boot/first-boot.target
+    dest: /etc/systemd/system
+- name: Copie du service systemd first-boot
+  copy:
+    src: first-boot/first-boot.service
+    dest: /etc/systemd/system
+- name: Mise en place de la cible first-boot par défaut
+  file:
+    path: /etc/systemd/system/default.target
+    src: first-boot.target
+    state: link
+- name: Création du répertoire de dépendances de la cible first-boot
+  file:
+    path: /etc/systemd/system/first-boot.target.wants
+    state: directory
+    mode: 0755
+- name: Ajout du service first-boot comme dépendance de la cible first-boot
+  file:
+    path: /etc/systemd/system/first-boot.target.wants/first-boot.service
+    src: ../first-boot.service
+    state: link
+- name: Ajout des dépendances systèmes à la cible first-boot
+  file:
+    path: '/etc/systemd/system/first-boot.target.wants/{{ item }}.service'
+    src: '/usr/lib/systemd/system/{{ item }}.service'
+    state: link
+  loop:
+    - dbus
+    - auditd
+    - crond
+    - firewalld
+    - kdump
+    - NetworkManager
+    - irqbalance
+    - tuned
+    - rsyslog
+    - vmtoolsd
+    - systemd-update-utmp-runlevel
+    - systemd-ask-password-wall
+- name: Extinction du master
+  community.general.shutdown:
