@@ -11,6 +11,10 @@
     autoremove: true
     state: absent
   register: initrd
+- name: Suppression de la clé SSH ansible
+  file:
+    path: /home/ansible/.ssh/authorized_keys
+    state: absent
 - name: Rebuild initramfs
   shell: dracut -f
   when: initrd.changed
