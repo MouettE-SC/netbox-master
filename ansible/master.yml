@@ -2,12 +2,12 @@
   vars_files:
     - vars.yml
   tasks:
-    - import_tasks: 00-luks-prep.yml
-    - import_tasks: 01-packages.yml
-    - import_tasks: 02-netbox-user.yml
-    - import_tasks: 03-postgresql.yml
-    - import_tasks: 04-redis.yml
-    - import_tasks: 05-netbox.yml
-    - import_tasks: 06-netbox-utils.yml
-    - import_tasks: 07-apache.yml
-#    - import_tasks: 99-finalize.yml
+#    - import_tasks: 00-luks-prep.yml
+#    - import_tasks: 01-packages.yml
+#    - import_tasks: 02-netbox-user.yml
+#    - import_tasks: 03-postgresql.yml
+#    - import_tasks: 04-redis.yml
+#    - import_tasks: 05-netbox.yml
+#    - import_tasks: 06-netbox-utils.yml
+#    - import_tasks: 07-apache.yml
+    - import_tasks: 99-finalize.yml

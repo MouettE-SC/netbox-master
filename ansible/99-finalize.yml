@@ -5,6 +5,15 @@
   loop:
     - anaconda-ks.cfg
     - original-ks.cfg
+- name: Suppression de plymouth
+  dnf:
+    name: plymouth
+    autoremove: true
+    state: absent
+  register: initrd
+- name: Rebuild initramfs
+  shell: dracut -f
+  when: initrd.changed
 - name: Vidage caches dnf
   shell: dnf clean all
 - name: Inventaire des cles ssh

@@ -184,7 +184,7 @@ def main():
     os.system(f"cryptsetup luksKillSlot -v -q /dev/{l_drive} 1")
     os.unlink('/etc/luks/install.keyfile')
     os.rmdir('/etc/luks')
-    os.system("sed -i -e s;/etc/luks/install.keyfile;none; /etc/crypttab")
+    os.system("sed -i -e s:/etc/luks/install.keyfile:none: /etc/crypttab")
     os.unlink('/etc/dracut.conf.d/luks.conf')
 
     print()
