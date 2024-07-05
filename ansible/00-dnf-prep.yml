@@ -1,0 +1,24 @@
+- name: Montage /var/cache/dnf
+  mount:
+    path: /var/cache/dnf
+    src: none
+    fstype: tmpfs
+    state: ephemeral
+- name: Suppression des packages firmware
+  dnf:
+    name:
+      - iwl1000-firmware
+      - iwl100-firmware
+      - iwl105-firmware
+      - iwl135-firmware
+      - iwl2000-firmware
+      - iwl2030-firmware
+      - iwl3160-firmware
+      - iwl5000-firmware
+      - iwl5150-firmware
+      - iwl6000-firmware
+      - iwl6000g2a-firmware
+      - iwl6050-firmware
+      - iwl7260-firmware
+      - linux-firmware
+    state: absent
